@@ -2,7 +2,7 @@
   "name": "dravion-landing",
   "version": "1.0.0",
   "private": true,
-  "homepage": "https://robowhisperer.github.io/DravionWebsite",
+  "homepage": "https://robowhisperer.github.io",
   "dependencies": {
     "@tsparticles/engine": "^3.9.1",
     "@tsparticles/react": "^3.0.0",
