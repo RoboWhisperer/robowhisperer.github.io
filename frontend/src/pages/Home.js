@@ -24,7 +24,7 @@ const Home = () => {
   });
 
   useEffect(() => {
-    fetch('/api/stats')
+    fetch(`${process.env.REACT_APP_BACKEND_URL}/api/stats`)
       .then(res => res.json())
       .then(data => {
         setStats({
