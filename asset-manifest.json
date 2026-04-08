@@ -1,10 +1,10 @@
 {
   "files": {
-    "main.css": "/DravionWebsite/static/css/main.d58e0f05.css",
-    "main.js": "/DravionWebsite/static/js/main.dff10fda.js",
-    "index.html": "/DravionWebsite/index.html",
-    "main.d58e0f05.css.map": "/DravionWebsite/static/css/main.d58e0f05.css.map",
-    "main.dff10fda.js.map": "/DravionWebsite/static/js/main.dff10fda.js.map"
+    "main.css": "/static/css/main.d58e0f05.css",
+    "main.js": "/static/js/main.dff10fda.js",
+    "index.html": "/index.html",
+    "main.d58e0f05.css.map": "/static/css/main.d58e0f05.css.map",
+    "main.dff10fda.js.map": "/static/js/main.dff10fda.js.map"
   },
   "entrypoints": [
     "static/css/main.d58e0f05.css",
