@@ -17,7 +17,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "predeploy": "REACT_APP_BACKEND_URL=https://dravionwebsite.onrender.com yarn build",
+    "predeploy": "cross-env REACT_APP_BACKEND_URL=https://dravionwebsite.onrender.com yarn build",
     "deploy": "gh-pages -d build"
   },
   "homepage": "https://dravion.github.io",
