@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Search, MessageCircle, ExternalLink } from 'lucide-react';
+import { useSiteConfig } from '../context/SiteConfigContext';
 
 const FAQ_DATA = [
   {
@@ -89,10 +90,23 @@ const FAQ = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedQuestion, setExpandedQuestion] = useState(null);
   const [activeCategory, setActiveCategory] = useState('all');
+  const { config } = useSiteConfig();
+  const pageConfig = config.pages?.faq || {};
+  const faqData = (pageConfig.questions && pageConfig.questions.length > 0)
+    ? pageConfig.questions
+    : FAQ_DATA;
+  const categories = (pageConfig.categories && pageConfig.categories.length > 0)
+    ? ['all', ...pageConfig.categories]
+    : ['all', ...faqData.map((c) => c.category)];
 
-  const categories = ['all', ...FAQ_DATA.map(c => c.category)];
+  const searchPlaceholder = pageConfig.searchPlaceholder || 'Search questions...';
+  const categoryLabel = pageConfig.categoryLabel || 'All Questions';
+  const noResults = pageConfig.noResults || {
+    title: 'No questions found',
+    description: 'Try adjusting your search or browse all categories',
+  };
 
-  const filteredFAQ = FAQ_DATA.map(category => ({
+  const filteredFAQ = faqData.map((category) => ({
     ...category,
     questions: category.questions.filter(q =>
       (activeCategory === 'all' || activeCategory === category.category) &&
@@ -111,12 +125,22 @@ const FAQ = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <span className="section-label">Help Center</span>
+            <span className="section-label">{pageConfig.hero?.label || 'Help Center'}</span>
             <h1 className="page-title">
-              Frequently Asked <span className="gradient-text">Questions</span>
+              {pageConfig.hero?.title ? (
+                pageConfig.hero.title.split(/<(.*?)>/).map((segment, idx) =>
+                  idx % 2 === 1 ? (
+                    <span key={idx} className="gradient-text">{segment}</span>
+                  ) : (
+                    segment
+                  )
+                )
+              ) : (
+                <>Frequently Asked <span className="gradient-text">Questions</span></>
+              )}
             </h1>
             <p className="page-subtitle">
-              Find answers to common questions about Dravion
+              {pageConfig.hero?.subtitle || 'Find answers to common questions about Dravion'}
             </p>
 
             {/* Search */}
@@ -124,7 +148,7 @@ const FAQ = () => {
               <Search size={20} />
               <input
                 type="text"
-                placeholder="Search questions..."
+                placeholder={searchPlaceholder}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -143,7 +167,7 @@ const FAQ = () => {
                 className={`category-tab ${activeCategory === cat ? 'active' : ''}`}
                 onClick={() => setActiveCategory(cat)}
               >
-                {cat === 'all' ? 'All Questions' : cat}
+                {cat === 'all' ? categoryLabel : cat}
               </button>
             ))}
           </div>
@@ -160,8 +184,8 @@ const FAQ = () => {
               animate={{ opacity: 1 }}
             >
               <MessageCircle size={48} />
-              <h3>No questions found</h3>
-              <p>Try adjusting your search or browse all categories</p>
+              <h3>{noResults.title}</h3>
+              <p>{noResults.description}</p>
             </motion.div>
           ) : (
             filteredFAQ.map((category, catIndex) => (
@@ -234,16 +258,16 @@ const FAQ = () => {
             viewport={{ once: true }}
           >
             <MessageCircle size={48} className="cta-icon" />
-            <h2>Still have questions?</h2>
-            <p>Can't find what you're looking for? Join our support server for personalized help.</p>
+            <h2>{pageConfig.cta?.title || 'Still have questions?'}</h2>
+            <p>{pageConfig.cta?.description || 'Can\'t find what you\'re looking for? Join our support server for personalized help.'}</p>
             <a
-              href="https://dsc.gg/dravion"
+              href={pageConfig.cta?.buttonUrl || 'https://dsc.gg/dravion'}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-primary btn-lg"
               data-testid="faq-support-btn"
             >
-              Join Support Server
+              {pageConfig.cta?.buttonLabel || 'Join Support Server'}
               <ExternalLink size={18} />
             </a>
           </motion.div>

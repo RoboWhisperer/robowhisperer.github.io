@@ -4,6 +4,8 @@ import {
   Heart, Code, Palette, Server, Users, ExternalLink,
   Globe, MessageCircle
 } from 'lucide-react';
+import { useSiteConfig } from '../context/SiteConfigContext';
+import { getIcon } from '../utils/iconMap';
 import Card3D from '../components/Card3D';
 
 const TEAM = [
@@ -72,6 +74,16 @@ const STATS = [
 ];
 
 const Team = () => {
+  const { config } = useSiteConfig();
+  const pageConfig = config.pages?.team || {};
+  const hero = pageConfig.hero || {};
+  const mission = pageConfig.mission || {};
+  const stats = (pageConfig.stats && pageConfig.stats.length > 0) ? pageConfig.stats : STATS;
+  const teamMembers = (pageConfig.members && pageConfig.members.length > 0) ? pageConfig.members : TEAM;
+  const values = (pageConfig.values && pageConfig.values.length > 0) ? pageConfig.values : VALUES;
+  const join = pageConfig.join || {};
+  const JoinIcon = getIcon(join.icon || 'users');
+
   return (
     <div className="team-page" data-testid="team-page">
       {/* Hero */}
@@ -82,12 +94,22 @@ const Team = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <span className="section-label">Meet the Team</span>
+            <span className="section-label">{hero.label || 'Meet the Team'}</span>
             <h1 className="page-title">
-              The People Behind <span className="gradient-text">Dravion</span>
+              {hero.title ? (
+                hero.title.split(/<(.*?)>/).map((segment, idx) =>
+                  idx % 2 === 1 ? (
+                    <span key={idx} className="gradient-text">{segment}</span>
+                  ) : (
+                    segment
+                  )
+                )
+              ) : (
+                <>The People Behind <span className="gradient-text">Dravion</span></>
+              )}
             </h1>
             <p className="page-subtitle">
-              A passionate team dedicated to building the most advanced Discord bot ever.
+              {hero.subtitle || 'A passionate team dedicated to building the most advanced Discord bot ever.'}
             </p>
           </motion.div>
         </div>
@@ -102,13 +124,8 @@ const Team = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2>Our Mission</h2>
-            <p>
-              We believe every Discord server deserves access to powerful, 
-              professional-grade tools without complexity or cost barriers. 
-              Dravion was built to democratize server management, bringing 
-              enterprise-level features to communities of all sizes.
-            </p>
+            <h2>{mission.title || 'Our Mission'}</h2>
+            <p>{mission.description || 'We believe every Discord server deserves access to powerful, professional-grade tools without complexity or cost barriers. Dravion was built to democratize server management, bringing enterprise-level features to communities of all sizes.'}</p>
           </motion.div>
         </div>
       </section>
@@ -117,7 +134,7 @@ const Team = () => {
       <section className="team-stats">
         <div className="container">
           <div className="stats-row">
-            {STATS.map((stat, i) => (
+            {stats.map((stat, i) => (
               <motion.div
                 key={stat.label}
                 className="stat-item"
@@ -150,7 +167,7 @@ const Team = () => {
           </motion.div>
 
           <div className="team-grid">
-            {TEAM.map((member, i) => (
+            {teamMembers.map((member, i) => (
               <motion.div
                 key={member.name}
                 initial={{ opacity: 0, y: 30 }}
@@ -161,7 +178,7 @@ const Team = () => {
                 <Card3D className="team-card">
                   <div className="team-card-header">
                     <img 
-                      src={member.avatar} 
+                      src={member.avatar}
                       alt={member.name}
                       className="team-avatar"
                     />
@@ -172,17 +189,17 @@ const Team = () => {
                   </div>
                   <p className="team-bio">{member.bio}</p>
                   <div className="team-skills">
-                    {member.skills.map((skill) => (
+                    {(member.skills || []).map((skill) => (
                       <span key={skill} className="skill-tag">{skill}</span>
                     ))}
                   </div>
                   <div className="team-social">
-                    {member.social.twitter && (
+                    {member.social?.twitter && (
                       <a href={member.social.twitter} target="_blank" rel="noopener noreferrer">
                         <MessageCircle size={18} />
                       </a>
                     )}
-                    {member.social.github && (
+                    {member.social?.github && (
                       <a href={member.social.github} target="_blank" rel="noopener noreferrer">
                         <Globe size={18} />
                       </a>
@@ -211,22 +228,25 @@ const Team = () => {
           </motion.div>
 
           <div className="values-grid">
-            {VALUES.map((value, i) => (
-              <motion.div
-                key={value.title}
-                className="value-card"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <div className="value-icon">
-                  <value.icon size={28} />
-                </div>
-                <h3>{value.title}</h3>
-                <p>{value.description}</p>
-              </motion.div>
-            ))}
+            {values.map((value, i) => {
+              const Icon = typeof value.icon === 'string' ? getIcon(value.icon) : value.icon;
+              return (
+                <motion.div
+                  key={value.title}
+                  className="value-card"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                >
+                  <div className="value-icon">
+                    {Icon ? <Icon size={28} /> : null}
+                  </div>
+                  <h3>{value.title}</h3>
+                  <p>{value.description}</p>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -240,20 +260,21 @@ const Team = () => {
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
           >
-            <Users size={48} className="join-icon" />
-            <h2>Want to Join the Team?</h2>
-            <p>
-              We're always looking for passionate individuals to help us build 
-              the future of Discord bots. Join our community to learn about opportunities.
-            </p>
+            {JoinIcon ? (
+              <JoinIcon size={48} className="join-icon" />
+            ) : (
+              <Users size={48} className="join-icon" />
+            )}
+            <h2>{join.title || 'Want to Join the Team?'}</h2>
+            <p>{join.description || 'We\'re always looking for passionate individuals to help us build the future of Discord bots. Join our community to learn about opportunities.'}</p>
             <a
-              href="https://dsc.gg/dravion"
+              href={join.buttonUrl || 'https://dsc.gg/dravion'}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-primary btn-lg"
               data-testid="team-join-btn"
             >
-              Join Our Community
+              {join.buttonLabel || 'Join Our Community'}
               <ExternalLink size={18} />
             </a>
           </motion.div>

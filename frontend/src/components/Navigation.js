@@ -3,12 +3,14 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Sun, Moon, ChevronDown, ExternalLink } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useSiteConfig } from '../context/SiteConfigContext';
 
 const Navigation = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [featuresOpen, setFeaturesOpen] = useState(false);
   const { isDark, toggleTheme } = useTheme();
+  const { config } = useSiteConfig();
   const location = useLocation();
 
   useEffect(() => {
@@ -21,7 +23,7 @@ const Navigation = () => {
     setMobileOpen(false);
   }, [location]);
 
-  const navLinks = [
+  const navLinks = config.navLinks || [
     { name: 'Home', path: '/' },
     { name: 'Features', path: '/features', hasDropdown: true },
     { name: 'Status', path: '/status' },
@@ -29,6 +31,9 @@ const Navigation = () => {
     { name: 'FAQ', path: '/faq' },
     { name: 'Team', path: '/team' },
   ];
+
+  const brand = config.brand || {};
+  const cta = config.cta || {};
 
   return (
     <>
@@ -42,11 +47,11 @@ const Navigation = () => {
         <div className="nav-inner">
           <Link to="/" className="nav-logo" data-testid="nav-logo-link">
             <img
-              src="https://customer-assets.emergentagent.com/job_explore-bot-1/artifacts/bcncwr7o_Dravion%20Logo.png"
-              alt="Dravion"
+              src={brand.logo}
+              alt={brand.name || 'Logo'}
               className="nav-logo-img"
             />
-            <span className="nav-logo-text">DRAVION</span>
+            <span className="nav-logo-text">{brand.name || 'Brand'}</span>
           </Link>
 
           <div className="nav-links-desktop">
@@ -90,23 +95,23 @@ const Navigation = () => {
             </button>
 
             <a
-              href="https://dsc.gg/dravion"
+              href={cta.supportUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="nav-support-btn"
               data-testid="nav-support"
             >
-              Support
+              {cta.supportLabel || 'Support'}
             </a>
 
             <a
-              href="https://discord.com/oauth2/authorize"
+              href={cta.addBotUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-primary nav-cta"
               data-testid="nav-add-bot"
             >
-              Add Bot
+              {cta.addBotLabel || 'Add Bot'}
             </a>
 
             <button
@@ -139,12 +144,12 @@ const Navigation = () => {
               </Link>
             ))}
             <a
-              href="https://dsc.gg/dravion"
+              href={cta.supportUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="mobile-menu-link"
             >
-              Support Server <ExternalLink size={14} />
+              {cta.supportLabel || 'Support Server'} <ExternalLink size={14} />
             </a>
           </motion.div>
         )}

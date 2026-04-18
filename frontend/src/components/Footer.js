@@ -2,9 +2,13 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Server, Heart, ExternalLink } from 'lucide-react';
+import { useSiteConfig } from '../context/SiteConfigContext';
 
 const Footer = () => {
-  const footerLinks = {
+  const { config } = useSiteConfig();
+  const brand = config.brand || {};
+  const footer = config.footer || {};
+  const footerLinks = footer.categories || {
     Navigation: [
       { name: 'Home', path: '/' },
       { name: 'Features', path: '/features' },
@@ -27,23 +31,23 @@ const Footer = () => {
           <div className="footer-brand">
             <Link to="/" className="footer-logo">
               <img
-                src="https://customer-assets.emergentagent.com/job_explore-bot-1/artifacts/bcncwr7o_Dravion%20Logo.png"
-                alt="Dravion"
+                src={brand.logo}
+                alt={brand.name || 'Logo'}
                 className="footer-logo-img"
               />
-              <span className="footer-logo-text">DRAVION</span>
+              <span className="footer-logo-text">{brand.name || 'Brand'}</span>
             </Link>
             <p className="footer-tagline">
-              The most advanced Discord bot ever created. Transform your server today.
+              {brand.tagline || 'The most advanced Discord bot ever created. Transform your server today.'}
             </p>
             <a
-              href="https://discord.com/oauth2/authorize"
+              href={config.cta?.addBotUrl || 'https://discord.com/oauth2/authorize'}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-primary footer-cta"
               data-testid="footer-add-bot"
             >
-              Add to Discord
+              {config.cta?.addBotLabel || 'Add to Discord'}
             </a>
           </div>
 
@@ -85,9 +89,9 @@ const Footer = () => {
         </motion.div>
 
         <div className="footer-bottom">
-          <p>© 2024 Dravion. All rights reserved.</p>
+          <p>{footer.copyright || '© 2026 Dravion. All rights reserved.'}</p>
           <p className="footer-made-with">
-            Made with <Heart size={14} className="heart-icon" /> for Discord communities
+            {footer.madeWith || 'Made with'} <Heart size={14} className="heart-icon" /> {brand.name || 'Discord communities'}
           </p>
         </div>
       </div>

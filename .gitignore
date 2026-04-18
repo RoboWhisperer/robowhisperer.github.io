@@ -39,3 +39,4 @@ coverage/
 *.pyo
 .emergent/
 test_reports/
+frontend/yarn.lock

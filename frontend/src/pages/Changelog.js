@@ -4,6 +4,8 @@ import {
   Sparkles, Bug, Zap, Star, ChevronDown, ChevronRight,
   Calendar, Tag
 } from 'lucide-react';
+import { useSiteConfig } from '../context/SiteConfigContext';
+import { getIcon } from '../utils/iconMap';
 
 const CHANGELOG = [
   {
@@ -80,8 +82,13 @@ const CHANGELOG = [
 ];
 
 const Changelog = () => {
-  const [expandedVersion, setExpandedVersion] = useState(CHANGELOG[0].version);
+  const { config } = useSiteConfig();
+  const pageConfig = config.pages?.changelog || {};
+  const changelogData = (pageConfig.releases && pageConfig.releases.length > 0) ? pageConfig.releases : CHANGELOG;
+  const [expandedVersion, setExpandedVersion] = useState(changelogData[0]?.version);
   const [filter, setFilter] = useState('all');
+
+  const filterTypes = pageConfig.filters || ['all', 'feature', 'improvement', 'fix'];
 
   const getTypeIcon = (type) => {
     switch (type) {
@@ -116,12 +123,12 @@ const Changelog = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <span className="section-label">What's New</span>
+            <span className="section-label">{pageConfig.hero?.label || "What's New"}</span>
             <h1 className="page-title">
-              <span className="gradient-text">Changelog</span>
+              <span className="gradient-text">{pageConfig.hero?.title || 'Changelog'}</span>
             </h1>
             <p className="page-subtitle">
-              Stay up to date with the latest features, improvements, and bug fixes.
+              {pageConfig.hero?.subtitle || 'Stay up to date with the latest features, improvements, and bug fixes.'}
             </p>
           </motion.div>
         </div>
@@ -131,7 +138,7 @@ const Changelog = () => {
       <section className="changelog-filters">
         <div className="container">
           <div className="filter-tabs">
-            {['all', 'feature', 'improvement', 'fix'].map((f) => (
+            {filterTypes.map((f) => (
               <button
                 key={f}
                 className={`filter-tab ${filter === f ? 'active' : ''}`}
@@ -154,7 +161,7 @@ const Changelog = () => {
       <section className="changelog-timeline">
         <div className="container">
           <div className="timeline">
-            {CHANGELOG.map((release, i) => (
+            {changelogData.map((release, i) => (
               <motion.div
                 key={release.version}
                 className="timeline-item"
@@ -244,16 +251,16 @@ const Changelog = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2>Never Miss an Update</h2>
-            <p>Join our support server to get notified about new features and updates.</p>
+            <h2>{pageConfig.cta?.title || 'Never Miss an Update'}</h2>
+            <p>{pageConfig.cta?.description || 'Join our support server to get notified about new features and updates.'}</p>
             <a
-              href="https://dsc.gg/dravion"
+              href={pageConfig.cta?.buttonUrl || 'https://dsc.gg/dravion'}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-primary btn-lg"
               data-testid="changelog-cta-btn"
             >
-              Join Support Server
+              {pageConfig.cta?.buttonLabel || 'Join Support Server'}
             </a>
           </motion.div>
         </div>

@@ -4,10 +4,14 @@ import {
   Activity, CheckCircle, AlertCircle, Clock, Server, 
   Cpu, HardDrive, Wifi, RefreshCw, ExternalLink
 } from 'lucide-react';
+import { useSiteConfig } from '../context/SiteConfigContext';
+import { getIcon } from '../utils/iconMap';
 import Card3D from '../components/Card3D';
 
 const Status = () => {
-  const [status, setStatus] = useState({
+  const { config } = useSiteConfig();
+  const pageConfig = config.pages?.status || {};
+  const defaultStatus = {
     overall: 'operational',
     services: [
       { name: 'Bot Core', status: 'operational', latency: '45ms', uptime: '99.99%' },
@@ -19,7 +23,9 @@ const Status = () => {
     ],
     incidents: [],
     lastUpdated: new Date().toISOString(),
-  });
+  };
+
+  const [status, setStatus] = useState(pageConfig.initialStatus || defaultStatus);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [uptimeData, setUptimeData] = useState(
@@ -29,12 +35,32 @@ const Status = () => {
   const refreshStatus = () => {
     setIsRefreshing(true);
     setTimeout(() => {
-      setStatus(prev => ({
+      setStatus((prev) => ({
         ...prev,
         lastUpdated: new Date().toISOString(),
       }));
       setIsRefreshing(false);
     }, 1000);
+  };
+
+  const uptimeConfig = pageConfig.uptime || {};
+  const metricsConfig = pageConfig.metrics || [
+    { icon: 'cpu', value: '23%', label: 'CPU Usage', fill: '23%' },
+    { icon: 'harddrive', value: '45%', label: 'Memory Usage', fill: '45%' },
+    { icon: 'activity', value: '1.2K/s', label: 'Events/sec', fill: '60%' },
+  ];
+  const subscribeConfig = pageConfig.subscribe || {
+    title: 'Stay Updated',
+    description: 'Keep your community informed with the latest status and incident alerts.',
+    buttonLabel: 'Subscribe',
+    buttonUrl: 'https://dsc.gg/dravion',
+  };
+  const sections = pageConfig.sections || {
+    serviceStatus: 'Service Status',
+    systemMetrics: 'System Metrics',
+    recentIncidents: 'Recent Incidents',
+    noIncidents: 'No Recent Incidents',
+    noIncidentsMsg: 'All systems have been operating normally.',
   };
 
   const getStatusColor = (status) => {
@@ -55,6 +81,8 @@ const Status = () => {
     }
   };
 
+  const hero = pageConfig.hero || {};
+
   return (
     <div className="status-page" data-testid="status-page">
       {/* Hero */}
@@ -72,14 +100,14 @@ const Status = () => {
             >
               {getStatusIcon(status.overall)}
               <span>
-                {status.overall === 'operational' 
-                  ? 'All Systems Operational' 
-                  : 'Some Systems Experiencing Issues'}
+                {status.overall === 'operational'
+                  ? hero.badge?.operationalText || 'All Systems Operational'
+                  : hero.badge?.degradedText || 'Some Systems Experiencing Issues'}
               </span>
             </motion.div>
-            <h1 className="page-title">System Status</h1>
+            <h1 className="page-title">{hero.title || 'System Status'}</h1>
             <p className="page-subtitle">
-              Real-time status monitoring for all Dravion services
+              {hero.subtitle || 'Real-time status monitoring for all Dravion services'}
             </p>
             <div className="status-last-updated">
               <Clock size={14} />
@@ -100,8 +128,8 @@ const Status = () => {
       <section className="uptime-section">
         <div className="container">
           <div className="uptime-header">
-            <h2>90-Day Uptime History</h2>
-            <span className="uptime-percentage">99.95% uptime</span>
+            <h2>{uptimeConfig.title || '90-Day Uptime History'}</h2>
+            <span className="uptime-percentage">{uptimeConfig.percentage || '99.95% uptime'}</span>
           </div>
           <div className="uptime-graph" data-testid="uptime-graph">
             {uptimeData.map((day, i) => (
@@ -126,7 +154,7 @@ const Status = () => {
       {/* Services Status */}
       <section className="services-section">
         <div className="container">
-          <h2 className="section-title">Service Status</h2>
+          <h2 className="section-title">{sections.serviceStatus}</h2>
           <div className="services-grid">
             {status.services.map((service, i) => (
               <motion.div
@@ -171,53 +199,28 @@ const Status = () => {
       {/* System Metrics */}
       <section className="metrics-section">
         <div className="container">
-          <h2 className="section-title">System Metrics</h2>
+          <h2 className="section-title">{sections.systemMetrics}</h2>
           <div className="metrics-grid">
-            <Card3D className="metric-card">
-              <Cpu size={24} className="metric-icon" />
-              <div className="metric-content">
-                <span className="metric-value">23%</span>
-                <span className="metric-label">CPU Usage</span>
-              </div>
-              <div className="metric-bar">
-                <motion.div 
-                  className="metric-bar-fill"
-                  initial={{ width: 0 }}
-                  animate={{ width: '23%' }}
-                  transition={{ duration: 1 }}
-                />
-              </div>
-            </Card3D>
-            <Card3D className="metric-card">
-              <HardDrive size={24} className="metric-icon" />
-              <div className="metric-content">
-                <span className="metric-value">45%</span>
-                <span className="metric-label">Memory Usage</span>
-              </div>
-              <div className="metric-bar">
-                <motion.div 
-                  className="metric-bar-fill"
-                  initial={{ width: 0 }}
-                  animate={{ width: '45%' }}
-                  transition={{ duration: 1 }}
-                />
-              </div>
-            </Card3D>
-            <Card3D className="metric-card">
-              <Activity size={24} className="metric-icon" />
-              <div className="metric-content">
-                <span className="metric-value">1.2K/s</span>
-                <span className="metric-label">Events/sec</span>
-              </div>
-              <div className="metric-bar">
-                <motion.div 
-                  className="metric-bar-fill"
-                  initial={{ width: 0 }}
-                  animate={{ width: '60%' }}
-                  transition={{ duration: 1 }}
-                />
-              </div>
-            </Card3D>
+            {metricsConfig.map((metric, i) => {
+              const Icon = getIcon(metric.icon) || Activity;
+              return (
+                <Card3D key={metric.label} className="metric-card">
+                  <Icon size={24} className="metric-icon" />
+                  <div className="metric-content">
+                    <span className="metric-value">{metric.value}</span>
+                    <span className="metric-label">{metric.label}</span>
+                  </div>
+                  <div className="metric-bar">
+                    <motion.div 
+                      className="metric-bar-fill"
+                      initial={{ width: 0 }}
+                      animate={{ width: metric.fill || '50%' }}
+                      transition={{ duration: 1 }}
+                    />
+                  </div>
+                </Card3D>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -225,7 +228,7 @@ const Status = () => {
       {/* Recent Incidents */}
       <section className="incidents-section">
         <div className="container">
-          <h2 className="section-title">Recent Incidents</h2>
+          <h2 className="section-title">{sections.recentIncidents}</h2>
           <div className="incidents-list">
             {status.incidents.length === 0 ? (
               <motion.div
@@ -234,8 +237,8 @@ const Status = () => {
                 animate={{ opacity: 1 }}
               >
                 <CheckCircle size={48} />
-                <h3>No Recent Incidents</h3>
-                <p>All systems have been operating normally.</p>
+                <h3>{sections.noIncidents}</h3>
+                <p>{sections.noIncidentsMsg}</p>
               </motion.div>
             ) : (
               status.incidents.map((incident, i) => (
@@ -257,16 +260,16 @@ const Status = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h3>Stay Updated</h3>
-            <p>Get notified about incidents and maintenance windows</p>
+            <h3>{subscribeConfig.title}</h3>
+            <p>{subscribeConfig.description}</p>
             <a
-              href="https://dsc.gg/dravion"
+              href={subscribeConfig.buttonUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-primary"
               data-testid="status-subscribe-btn"
             >
-              Join Support Server
+              {subscribeConfig.buttonLabel}
               <ExternalLink size={16} />
             </a>
           </motion.div>

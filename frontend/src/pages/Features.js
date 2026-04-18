@@ -5,6 +5,8 @@ import {
   Settings, Info, Ticket, Lightbulb, Users, Search, Link2, Image,
   Server, Wrench, FileText, Bot, ChevronRight, Check
 } from 'lucide-react';
+import { useSiteConfig } from '../context/SiteConfigContext';
+import { getIcon } from '../utils/iconMap';
 import Card3D from '../components/Card3D';
 
 const MODULES = [
@@ -177,10 +179,26 @@ const CATEGORIES = ['All', ...new Set(MODULES.map(m => m.category))];
 const Features = () => {
   const [activeCategory, setActiveCategory] = useState('All');
   const [selectedModule, setSelectedModule] = useState(null);
+  const { config } = useSiteConfig();
+  const pageConfig = config.pages?.features || {};
+  const hero = pageConfig.hero || {};
+  const modulesData = (pageConfig.modules && pageConfig.modules.length > 0) ? pageConfig.modules : MODULES;
+  const categories = (pageConfig.categories && pageConfig.categories.length > 0)
+    ? pageConfig.categories
+    : ['All', ...new Set(modulesData.map((m) => m.category))];
 
-  const filteredModules = activeCategory === 'All' 
-    ? MODULES 
-    : MODULES.filter(m => m.category === activeCategory);
+  const ctaConfig = pageConfig.cta || {
+    title: 'Ready to unlock all 18 modules?',
+    description: 'Add Dravion to your server and experience the difference.',
+    buttonLabel: 'Add Dravion Now',
+    buttonUrl: 'https://discord.com/oauth2/authorize',
+    icon: 'bot',
+  };
+  const CtaIcon = getIcon(ctaConfig.icon);
+
+  const filteredModules = activeCategory === 'All'
+    ? modulesData
+    : modulesData.filter((m) => m.category === activeCategory);
 
   return (
     <div className="features-page" data-testid="features-page">
@@ -194,13 +212,22 @@ const Features = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <span className="section-label">Complete Feature Set</span>
+            <span className="section-label">{hero.label || 'Complete Feature Set'}</span>
             <h1 className="page-title">
-              <span className="gradient-text">18 Modules.</span> Unlimited Power.
+              {hero.title ? (
+                hero.title.split(/<(.*?)>/).map((segment, idx) =>
+                  idx % 2 === 1 ? (
+                    <span key={idx} className="gradient-text">{segment}</span>
+                  ) : (
+                    segment
+                  )
+                )
+              ) : (
+                <><span className="gradient-text">18 Modules.</span> Unlimited Power.</>
+              )}
             </h1>
             <p className="page-subtitle">
-              Every tool you need to build and manage the perfect Discord community, 
-              all in one beautifully designed bot.
+              {hero.subtitle || 'Every tool you need to build and manage the perfect Discord community, all in one beautifully designed bot.'}
             </p>
           </motion.div>
         </div>
@@ -210,7 +237,7 @@ const Features = () => {
       <section className="features-filters">
         <div className="container">
           <div className="category-tabs">
-            {CATEGORIES.map((cat) => (
+            {categories.map((cat) => (
               <button
                 key={cat}
                 className={`category-tab ${activeCategory === cat ? 'active' : ''}`}
@@ -220,7 +247,7 @@ const Features = () => {
                 {cat}
                 {cat !== 'All' && (
                   <span className="category-count">
-                    {MODULES.filter(m => m.category === cat).length}
+                    {modulesData.filter((m) => m.category === cat).length}
                   </span>
                 )}
               </button>
@@ -237,50 +264,54 @@ const Features = () => {
             layout
           >
             <AnimatePresence mode="popLayout">
-              {filteredModules.map((module, i) => (
-                <motion.div
-                  key={module.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.3, delay: i * 0.05 }}
-                >
-                  <Card3D
-                    className="module-card"
-                    onClick={() => setSelectedModule(module)}
+              {filteredModules.map((module, i) => {
+                const Icon = typeof module.icon === 'string' ? getIcon(module.icon) : module.icon;
+
+                return (
+                  <motion.div
+                    key={module.id || module.name}
+                    layout
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.3, delay: i * 0.05 }}
                   >
-                    <div 
-                      className="module-icon-wrap"
-                      style={{ '--module-color': module.color }}
+                    <Card3D
+                      className="module-card"
+                      onClick={() => setSelectedModule(module)}
                     >
-                      <module.icon size={28} />
-                    </div>
-                    <div className="module-content">
-                      <div className="module-header">
-                        <h3 className="module-name">{module.name}</h3>
-                        <span className="module-category">{module.category}</span>
+                      <div
+                        className="module-icon-wrap"
+                        style={{ '--module-color': module.color }}
+                      >
+                        {Icon ? <Icon size={28} /> : null}
                       </div>
-                      <p className="module-desc">{module.description}</p>
-                      <ul className="module-features-preview">
-                        {module.features.slice(0, 3).map((f, i) => (
-                          <li key={i}>
-                            <Check size={12} />
-                            {f}
-                          </li>
-                        ))}
-                      </ul>
-                      <button className="module-expand-btn">
-                        View Details <ChevronRight size={14} />
-                      </button>
-                    </div>
-                    <div 
-                      className="module-glow"
-                      style={{ background: `radial-gradient(circle, ${module.color}20, transparent)` }}
-                    />
-                  </Card3D>
-                </motion.div>
-              ))}
+                      <div className="module-content">
+                        <div className="module-header">
+                          <h3 className="module-name">{module.name}</h3>
+                          <span className="module-category">{module.category}</span>
+                        </div>
+                        <p className="module-desc">{module.description}</p>
+                        <ul className="module-features-preview">
+                          {module.features.slice(0, 3).map((feature, index) => (
+                            <li key={index}>
+                              <Check size={12} />
+                              {feature}
+                            </li>
+                          ))}
+                        </ul>
+                        <button className="module-expand-btn">
+                          View Details <ChevronRight size={14} />
+                        </button>
+                      </div>
+                      <div
+                        className="module-glow"
+                        style={{ background: `radial-gradient(circle, ${module.color}20, transparent)` }}
+                      />
+                    </Card3D>
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           </motion.div>
         </div>
@@ -376,17 +407,23 @@ const Features = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2>Ready to unlock all 18 modules?</h2>
-            <p>Add Dravion to your server and experience the difference.</p>
+            <h2>{ctaConfig.title}</h2>
+            <p>{ctaConfig.description}</p>
             <a
-              href="https://discord.com/oauth2/authorize"
+              href={ctaConfig.buttonUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-primary btn-xl"
               data-testid="features-cta-btn"
             >
-              <Bot size={24} />
-              Add Dravion Now
+              {CtaIcon ? (
+                <span className="btn-icon">
+                  <CtaIcon size={24} />
+                </span>
+              ) : (
+                <Bot size={24} />
+              )}
+              {ctaConfig.buttonLabel}
             </a>
           </motion.div>
         </div>

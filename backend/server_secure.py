@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, Form, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPBearer, HTTPAuthCredentials
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -67,7 +67,7 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def verify_token(credentials: HTTPAuthorizationCredentials) -> dict:
+def verify_token(credentials: HTTPAuthCredentials) -> dict:
     """Verify JWT token"""
     try:
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
@@ -113,7 +113,12 @@ def backup_config(original_path: Path, backup_dir: Path):
 @limiter.limit("5/minute")
 async def login(password: str = Form(...), request = None):
     """Authenticate and get JWT token"""
-    # Direct password check (simpler than bcrypt hash comparison)
+    if not verify_password(password, hash_password(ADMIN_PASSWORD)):
+        # Log failed attempt
+        log_audit("AUTH_FAILED", {"reason": "Invalid password"}, getattr(request, "client", {}).host if request else "unknown")
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Verify the password directly if env variable matches
     if password != ADMIN_PASSWORD:
         log_audit("AUTH_FAILED", {"reason": "Invalid password"}, getattr(request, "client", {}).host if request else "unknown")
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -123,7 +128,7 @@ async def login(password: str = Form(...), request = None):
     return {"access_token": access_token, "token_type": "bearer"}
 
 @app.post("/api/auth/logout")
-async def logout(credentials: HTTPAuthorizationCredentials = Depends(security), request = None):
+async def logout(credentials: HTTPAuthCredentials = Depends(security), request = None):
     """Logout (token invalidation would require token blacklist in production)"""
     log_audit("AUTH_LOGOUT", {"user": "admin"}, getattr(request, "client", {}).host if request else "unknown")
     return {"status": "logged out"}
@@ -189,7 +194,7 @@ async def get_team():
 
 # ============= Admin Config Endpoints =============
 @app.get("/api/config")
-async def get_config(credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def get_config(credentials: HTTPAuthCredentials = Depends(security)):
     """Get the current site configuration (requires auth)"""
     try:
         verify_token(credentials)
@@ -208,7 +213,7 @@ async def get_config(credentials: HTTPAuthorizationCredentials = Depends(securit
 @limiter.limit("10/minute")
 async def update_config(
     config: dict,
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: HTTPAuthCredentials = Depends(security),
     background_tasks: BackgroundTasks = None,
     request = None
 ):
@@ -250,7 +255,7 @@ async def update_config(
         return {"status": "error", "message": str(e)}
 
 @app.get("/api/config/backups")
-async def list_backups(credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def list_backups(credentials: HTTPAuthCredentials = Depends(security)):
     """List available configuration backups"""
     try:
         verify_token(credentials)
@@ -271,7 +276,7 @@ async def list_backups(credentials: HTTPAuthorizationCredentials = Depends(secur
 @app.post("/api/config/restore/{backup_name}")
 async def restore_config(
     backup_name: str,
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: HTTPAuthCredentials = Depends(security),
     background_tasks: BackgroundTasks = None,
     request = None
 ):
@@ -303,7 +308,7 @@ async def restore_config(
         return {"status": "error", "message": str(e)}
 
 @app.get("/api/audit-log")
-async def get_audit_log(credentials: HTTPAuthorizationCredentials = Depends(security), limit: int = 100):
+async def get_audit_log(credentials: HTTPAuthCredentials = Depends(security), limit: int = 100):
     """Get audit log entries"""
     try:
         verify_token(credentials)
@@ -318,159 +323,6 @@ async def get_audit_log(credentials: HTTPAuthorizationCredentials = Depends(secu
                     except:
                         pass
         return {"entries": entries}
-    except HTTPException:
-        raise
-    except Exception as e:
-        return {"error": str(e)}
-
-@app.get("/api/config/templates")
-async def get_templates(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Get available configuration templates"""
-    try:
-        verify_token(credentials)
-        
-        # Define built-in templates
-        templates = [
-            {
-                "name": "Minimal",
-                "description": "Clean, minimal configuration for a simple landing page",
-                "config": {
-                    "brand": {
-                        "name": "Your Brand",
-                        "tagline": "Your amazing tagline here"
-                    },
-                    "hero": {
-                        "title": "Welcome",
-                        "subtitle": "This is a minimal configuration",
-                        "cta": {
-                            "text": "Get Started",
-                            "url": "#"
-                        }
-                    },
-                    "features": [],
-                    "team": {"members": []},
-                    "contact": {}
-                }
-            },
-            {
-                "name": "Business",
-                "description": "Professional business website configuration",
-                "config": {
-                    "brand": {
-                        "name": "Your Company",
-                        "tagline": "Professional Solutions"
-                    },
-                    "hero": {
-                        "title": "Transform Your Business",
-                        "subtitle": "We provide innovative solutions for modern businesses",
-                        "cta": {
-                            "text": "Contact Us",
-                            "url": "#contact"
-                        }
-                    },
-                    "features": [
-                        {
-                            "title": "Expert Team",
-                            "description": "Our experienced professionals deliver quality results",
-                            "icon": "Users"
-                        },
-                        {
-                            "title": "Innovation",
-                            "description": "Cutting-edge technology and modern approaches",
-                            "icon": "Zap"
-                        },
-                        {
-                            "title": "Support",
-                            "description": "24/7 customer support and maintenance",
-                            "icon": "Shield"
-                        }
-                    ],
-                    "team": {
-                        "members": [
-                            {
-                                "name": "John Doe",
-                                "role": "CEO & Founder"
-                            },
-                            {
-                                "name": "Jane Smith",
-                                "role": "CTO"
-                            }
-                        ]
-                    },
-                    "contact": {
-                        "email": "hello@yourcompany.com"
-                    }
-                }
-            },
-            {
-                "name": "Tech Startup",
-                "description": "Modern tech startup configuration with advanced features",
-                "config": {
-                    "brand": {
-                        "name": "TechStart",
-                        "tagline": "Building the future, one line of code at a time"
-                    },
-                    "hero": {
-                        "title": "Revolutionary Technology",
-                        "subtitle": "Empowering developers and businesses with cutting-edge solutions",
-                        "cta": {
-                            "text": "Start Building",
-                            "url": "#features"
-                        }
-                    },
-                    "stats": {
-                        "servers": "10,000+",
-                        "users": "2M+",
-                        "commands_executed": "50M+",
-                        "uptime": "99.9%"
-                    },
-                    "features": [
-                        {
-                            "title": "AI-Powered",
-                            "description": "Advanced artificial intelligence capabilities",
-                            "icon": "Brain"
-                        },
-                        {
-                            "title": "Cloud Native",
-                            "description": "Built for scale with modern cloud architecture",
-                            "icon": "Cloud"
-                        },
-                        {
-                            "title": "Developer Friendly",
-                            "description": "Comprehensive APIs and developer tools",
-                            "icon": "Code"
-                        },
-                        {
-                            "title": "Enterprise Security",
-                            "description": "Bank-grade security and compliance",
-                            "icon": "Lock"
-                        }
-                    ],
-                    "team": {
-                        "members": [
-                            {
-                                "name": "Alex Chen",
-                                "role": "Founder & CEO"
-                            },
-                            {
-                                "name": "Sarah Johnson",
-                                "role": "Head of Engineering"
-                            },
-                            {
-                                "name": "Mike Wilson",
-                                "role": "Product Manager"
-                            }
-                        ]
-                    },
-                    "contact": {
-                        "email": "team@techstart.com",
-                        "discord": "https://discord.gg/techstart"
-                    }
-                }
-            }
-        ]
-        
-        return {"templates": templates}
     except HTTPException:
         raise
     except Exception as e:
